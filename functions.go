@@ -1,20 +1,39 @@
 package pindex
 
 import (
+	"bytes"
+	"github.com/peterbourgon/exp-html"
 	"strings"
 )
 
 func SimpleCount(r Review) int { return 1 }
 
+func baseWord(word string) string {
+	return strings.ToLower(strings.Trim(word, ` ,.;!?"-`))
+}
+
 func WordCount(r Review) int {
-	words := strings.Split(r.Body, " ")
 	valid := 0
-	for _, word := range words {
-		if strings.Trim(word, " ,.;!?") != "" {
+	for _, word := range strings.Split(r.Body, " ") {
+		if baseWord(word) != "" {
 			valid += 1
 		}
 	}
 	return valid
+}
+
+func InventedWordsFunc(dictfile string) func(r Review) int {
+	dict := NewDict(dictfile)
+	return func(r Review) int {
+		count := 0
+		for _, word := range strings.Split(r.Body, " ") {
+			if !dict.Has(baseWord(word)) {
+				// fmt.Printf("invented '%s'\n", baseWord(word))
+				count += 1
+			}
+		}
+		return count
+	}
 }
 
 func NaïveSentenceLength(r Review) int {
@@ -41,6 +60,22 @@ func Pitchformulaity(r Review) int {
 	return score
 }
 
+func stripHTML(s string) string {
+	z := html.NewTokenizer(bytes.NewBufferString(s))
+	results := []string{}
+	done := false
+	for !done {
+		tt := z.Next()
+		switch tt {
+		case html.TextToken:
+			results = append(results, string(z.Text()))
+		case html.ErrorToken:
+			done = true
+		}
+	}
+	return strings.Join(results, "")
+}
+
 var (
 	PitchformulaWords = map[string]int{
 		// word          triteness (higher=more trite)
@@ -51,37 +86,37 @@ var (
 		"echoes":        1,
 		"echoing":       1,
 		"echo":          1,
-		"organic":       1,
+		"organic":       5,
 		"percussive":    1,
 		"gentle":        1,
 		"heavy":         1,
 		"soft":          1,
-		"lush":          1,
-		"ethereal":      1,
-		"delicate":      1,
+		"lush":          9,
+		"ethereal":      9,
+		"delicate":      3,
 		"plucked":       1,
 		"buzzing":       1,
-		"shimmering":    1,
-		"fragile":       1,
+		"shimmering":    5,
+		"fragile":       5,
 		"swirling":      1,
 		"cutting":       1,
-		"understated":   1,
+		"understated":   2,
 		"clouds":        1,
 		"chiming":       1,
 		"pounding":      1,
 		"pulsing":       1,
 		"fluid":         1,
 		"rolling":       1,
-		"skittering":    1,
+		"skittering":    3,
 		"rumbling":      1,
 		"dreamy":        1,
 		"hushed":        1,
 		"backwards":     1,
 		"murky":         1,
 		"fuzzy":         1,
-		"subtle":        1,
-		"subtly":        1,
-		"subtlety":      1,
+		"subtle":        2,
+		"subtly":        2,
+		"subtlety":      2,
 		"layer":         1,
 		"layers":        1,
 		"layered":       1,
@@ -113,7 +148,7 @@ var (
 		"detail":        1,
 		"detailed":      1,
 		"seamlessly":    1,
-		"hypnotic":      1,
+		"hypnotic":      4,
 		"shifting":      1,
 		"drifting":      1,
 		"drops":         1,
@@ -123,17 +158,17 @@ var (
 		"stormy":        1,
 		"twists":        1,
 		"dynamic":       1,
-		"disparate":     1,
+		"disparate":     2,
 		"counterpoint":  1,
 		"sweeping":      1,
 		"surreal":       1,
 		"dissonance":    1,
-		"glowing":       1,
+		"glowing":       3,
 		"vibrant":       1,
 		"controlled":    1,
 		"faded":         1,
 		"winds":         1,
-		"skeletal":      1,
+		"skeletal":      5,
 		"repeatedly":    1,
 		"glow":          1,
 		"spacious":      1,
@@ -149,23 +184,23 @@ var (
 		"polished":      1,
 		"shiny":         1,
 		"predictable":   1,
-		"melancholy":    1,
+		"melancholy":    3,
 		"sadness":       1,
 		"plaintive":     1,
 		"somber":        1,
-		"dirge":         1,
+		"dirge":         2,
 		"depression":    1,
 		"dark":          1,
-		"frenetic":      1,
+		"frenetic":      2,
 		"manic":         1,
-		"frantic":       1,
+		"frantic":       2,
 		"frenzied":      1,
 		"wild":          1,
 		"madness":       1,
 		"crazed":        1,
 		"strange":       1,
-		"mysterious":    1,
-		"ghostly":       1,
+		"mysterious":    2,
+		"ghostly":       4,
 		"violent":       1,
 		"brutal":        1,
 		"violence":      1,
@@ -193,24 +228,24 @@ var (
 		"confident":     1,
 		"romantic":      1,
 		"relentless":    1,
-		"despair":       1,
+		"despair":       2,
 		"loss":          1,
 		"regret":        1,
 		"abandon":       1,
 		"modest":        1,
 		"dangerous":     1,
 		"tortured":      1,
-		"alienation":    1,
+		"alienation":    2,
 		"insecurity":    1,
 		"whisper":       1,
 		"whispers":      1,
 		"whispering":    1,
-		"croon":         1,
-		"croons":        1,
-		"crooning":      1,
-		"wail":          1,
-		"wails":         1,
-		"wailing":       1,
+		"croon":         5,
+		"croons":        5,
+		"crooning":      5,
+		"wail":          3,
+		"wails":         3,
+		"wailing":       3,
 		"tenor":         1,
 		"chant":         1,
 		"chants":        1,

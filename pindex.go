@@ -1,11 +1,11 @@
 package pindex
 
 import (
-	"bytes"
+	"bufio"
 	"encoding/json"
 	"fmt"
-	"github.com/peterbourgon/exp-html"
 	"io/ioutil"
+	"os"
 	"sort"
 	"strings"
 )
@@ -107,21 +107,46 @@ func (me *Index) MapAverage(f func(Review) int) map[string]int {
 	)
 }
 
-func stripHTML(s string) string {
-	z := html.NewTokenizer(bytes.NewBufferString(s))
-	results := []string{}
-	done := false
-	for !done {
-		tt := z.Next()
-		switch tt {
-		case html.TextToken:
-			results = append(results, string(z.Text()))
-		case html.ErrorToken:
-			done = true
-		}
-	}
-	return strings.Join(results, "")
+//
+//
+//
+
+type Dict map[string]struct{}
+
+func NewDict(filename string) *Dict {
+	d := &Dict{}
+	d.Load(filename)
+	return d
 }
+
+func (d *Dict) Load(filename string) {
+	f, err := os.Open(filename)
+	if err != nil {
+		return
+	}
+	defer f.Close()
+	r := bufio.NewReader(f)
+	for {
+		line, err := r.ReadString('\n')
+		if err != nil {
+			break
+		}
+		(*d)[strings.TrimSpace(strings.ToLower(line))] = struct{}{}
+	}
+}
+
+func (d *Dict) Count() int {
+	return len(*d)
+}
+
+func (d *Dict) Has(s string) bool {
+	_, ok := (*d)[s]
+	return ok
+}
+
+//
+//
+//
 
 type AuthorScore struct {
 	Author string

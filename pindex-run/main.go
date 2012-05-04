@@ -7,8 +7,9 @@ import (
 )
 
 var (
-	infile  *string = flag.String("infile", "in.json", ".json file to load reviews")
-	outfile *string = flag.String("outfile", "out.json", ".json file to store scores")
+	infile   *string = flag.String("infile", "in.json", ".json file to load reviews")
+	outfile  *string = flag.String("outfile", "out.json", ".json file to store scores")
+	dictfile *string = flag.String("dictfile", "/usr/share/dict/words", "dict file")
 )
 
 func main() {
@@ -17,7 +18,14 @@ func main() {
 	if err := idx.LoadFile(*infile); err != nil {
 		log.Fatalf("%s", err)
 	}
-	log.Printf("%d authors, %d reviews represented", idx.Authors(), idx.Reviews())
+	log.Printf(
+		"%s: %d authors, %d reviews represented",
+		*infile,
+		idx.Authors(),
+		idx.Reviews(),
+	)
+	dict := pindex.NewDict(*dictfile)
+	log.Printf("%s: %d words", *dictfile, dict.Count())
 
 	log.Printf("Pitchformulaity:")
 	fr := pindex.SortedResults(idx.MapAverage(pindex.Pitchformulaity))
@@ -26,6 +34,10 @@ func main() {
 	log.Printf("Average naïve sentence length:")
 	lr := pindex.SortedResults(idx.MapAverage(pindex.NaïveSentenceLength))
 	printTopN(5, lr)
+
+	log.Printf("Average number of invented words:")
+	ir := pindex.SortedResults(idx.MapAverage(pindex.InventedWordsFunc(*dictfile)))
+	printTopN(5, ir)
 }
 
 func printTopN(n int, results []pindex.AuthorScore) {
