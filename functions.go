@@ -22,6 +22,10 @@ func WordCount(r Review) int {
 	return valid
 }
 
+func CharacterCount(r Review) int {
+	return len(stripHTML(r.Body))
+}
+
 func InventedWordsFunc(dictfile string) func(r Review) int {
 	dict := NewDict(dictfile)
 	return func(r Review) int {

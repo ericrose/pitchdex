@@ -2,32 +2,68 @@ package pindex
 
 import (
 	"bufio"
+	"database/sql"
 	"encoding/json"
 	"fmt"
+	_ "github.com/mattn/go-sqlite3"
 	"io/ioutil"
+	"log"
 	"os"
-	"sort"
+	"strconv"
 	"strings"
 )
 
 type Review struct {
+	ID     int
 	Author string `json:"reviewers"`
 	Body   string `json:"editorial"`
 }
 
 type BunchOfReviews map[string]Review
 
-type Index struct {
-	repr map[string][]Review
+//
+//
+//
+
+type Database struct {
+	db *sql.DB
 }
 
-func NewIndex() *Index {
-	return &Index{
-		repr: map[string][]Review{},
+func NewDatabase(filename string) (*Database, error) {
+	db, err := sql.Open("sqlite3", filename)
+	if err != nil {
+		return nil, err
+	}
+	return &Database{db}, nil
+}
+
+func (d *Database) Initialize() {
+	tables := []string{
+		`CREATE TABLE reviews (
+			id INT PRIMARY KEY,
+			author VARCHAR(64),
+			body TEXT
+		)`,
+		`CREATE INDEX reviews_author ON reviews(author)`,
+		`CREATE TABLE scores (
+			review_id,
+			index_name VARCHAR(64),
+			score INT
+		)`,
+		`CREATE INDEX scores_index ON scores(index_name)`,
+		`CREATE INDEX scores_review ON scores(review_id)`,
+	}
+	for _, createTable := range tables {
+		if _, err := d.db.Exec(createTable); err != nil {
+			log.Printf("%s", err)
+		}
 	}
 }
 
-func (me *Index) LoadFile(filename string) error {
+type IndexMap map[string]ScoringFunction
+type ScoringFunction func(Review) int
+
+func (d *Database) LoadFile(filename string) error {
 	buf, err := ioutil.ReadFile(filename)
 	if err != nil {
 		return fmt.Errorf("ReadFile: %s", err)
@@ -37,74 +73,138 @@ func (me *Index) LoadFile(filename string) error {
 	if err != nil {
 		return fmt.Errorf("Unmarshal: %s", err)
 	}
-	for _, review := range reviews {
-		me.Add(review)
+	for permalink, review := range reviews {
+		i, err := strconv.ParseInt(strings.Split(permalink, "-")[0], 10, 64)
+		if err != nil {
+			log.Printf("%s: %s", permalink, err)
+			continue
+		}
+		review.ID = int(i)
+
+		//log.Printf("Loading %d: %s (%dB)", review.ID, review.Author, len(review.Body))
+		if err := d.AddReview(review); err != nil {
+			return err
+		}
 	}
 	return nil
 }
 
-func (me *Index) Add(r Review) {
-	r.Body = stripHTML(r.Body)
-	if reviews, ok := me.repr[r.Author]; ok {
-		me.repr[r.Author] = append(reviews, r)
-	} else {
-		me.repr[r.Author] = []Review{r}
-	}
+func (d *Database) AddReview(r Review) error {
+	_, err := d.db.Exec(
+		"INSERT INTO reviews (id, author, body) VALUES (?, ?, ?)",
+		r.ID,
+		r.Author,
+		r.Body,
+	)
+	return err
 }
 
-func (me *Index) Authors() int {
-	return len(me.repr)
+func (d *Database) AddScore(r Review, index string, score int) error {
+	_, err := d.db.Exec(
+		"INSERT INTO scores (review_id, index_name, score) VALUES (?, ?, ?)",
+		r.ID,
+		index,
+		score,
+	)
+	return err
 }
 
-func (me *Index) Reviews() int {
-	count := 0
-	for _, reviews := range me.repr {
-		count += len(reviews)
+func (d *Database) ScoreExistingReviews(m IndexMap) error {
+	rows, err := d.db.Query(`SELECT id, author, body FROM reviews`)
+	if err != nil {
+		return err
 	}
+	log.Printf("Score existing reviews: reading...")
+	for rows.Next() {
+		var r Review
+		rows.Scan(&r.ID, &r.Author, &r.Body)
+		for indexName, scoreFunc := range m {
+			defer d.AddScore(r, indexName, scoreFunc(r))
+		}
+	}
+	log.Printf("Score existing reviews: writing...")
+	return nil
+}
+
+func (d *Database) Reviews() int {
+	row := d.db.QueryRow(`SELECT Count(*) FROM reviews`)
+	var count int
+	row.Scan(&count)
 	return count
 }
 
-func (me *Index) MapAll(f func([]Review) int) map[string]int {
-	// Split work
-	data := map[string]chan int{}
-	for author, reviews := range me.repr {
-		c := make(chan int)
-		data[author] = c
-		go func(c chan int, reviews []Review) {
-			c <- f(reviews)
-			close(c)
-		}(c, reviews)
-	}
-	// Aggregate results
-	scores := map[string]int{}
-	for author, c := range data {
-		scores[author] = <-c
-	}
-	return scores
+func (d *Database) Authors() int {
+	row := d.db.QueryRow(`SELECT Count(DISTINCT author) FROM reviews`)
+	var count int
+	row.Scan(&count)
+	return count
 }
 
-func (me *Index) MapAdditive(f func(Review) int) map[string]int {
-	return me.MapAll(
-		func(reviews []Review) int {
-			value := 0
-			for _, review := range reviews {
-				value += f(review)
-			}
-			return value
-		},
-	)
+func (d *Database) ReviewsBy(author string) int {
+	row := d.db.QueryRow(`SELECT Count(*) FROM reviews WHERE author = ?`, author)
+	var count int
+	row.Scan(&count)
+	return count
 }
 
-func (me *Index) MapAverage(f func(Review) int) map[string]int {
-	return me.MapAll(
-		func(reviews []Review) int {
-			value := 0
-			for _, review := range reviews {
-				value += f(review)
-			}
-			return int(float64(value) / float64(len(reviews)))
-		},
+func (d *Database) TotalScore(author, index string) int {
+	row := d.db.QueryRow(
+		`SELECT SUM(score) FROM scores
+		 WHERE index_name = ?
+		 AND review_id IN (
+		   SELECT id FROM reviews WHERE author = ?
+		 )`,
+		index,
+		author,
 	)
+	var sum int
+	row.Scan(&sum)
+	return sum
+}
+
+func (d *Database) AverageScore(author, index string) int {
+	row := d.db.QueryRow(
+		`SELECT AVG(score) FROM scores
+		 WHERE index_name = ?
+		 AND review_id IN (
+		   SELECT id FROM reviews WHERE author = ?
+		 )`,
+		index,
+		author,
+	)
+	var avg float64
+	row.Scan(&avg)
+
+	return int(avg)
+}
+
+type AuthorScore struct {
+	Author string
+	Score  int
+}
+
+func (d *Database) AverageRanking(index string) []AuthorScore {
+	authorScores := []AuthorScore{}
+	rows, err := d.db.Query(
+		`SELECT r.author, Avg(s.score) AS avg_score
+		 FROM reviews r, scores s
+		 WHERE s.review_id = r.id
+		   AND s.index_name = ?
+		 GROUP BY r.author
+		 ORDER by avg_score DESC`,
+		index,
+	)
+	if err != nil {
+		return authorScores
+	}
+	for rows.Next() {
+		as := AuthorScore{}
+		var f float64
+		rows.Scan(&as.Author, &f)
+		as.Score = int(f)
+		authorScores = append(authorScores, as)
+	}
+	return authorScores
 }
 
 //
@@ -142,29 +242,4 @@ func (d *Dict) Count() int {
 func (d *Dict) Has(s string) bool {
 	_, ok := (*d)[s]
 	return ok
-}
-
-//
-//
-//
-
-type AuthorScore struct {
-	Author string
-	Score  int
-}
-
-type AuthorScoreList []AuthorScore
-
-func (l AuthorScoreList) Len() int           { return len(l) }
-func (l AuthorScoreList) Less(i, j int) bool { return l[i].Score > l[j].Score }
-func (l AuthorScoreList) Swap(i, j int)      { l[i], l[j] = l[j], l[i] }
-
-func SortedResults(results map[string]int) AuthorScoreList {
-	i, l := 0, make(AuthorScoreList, len(results))
-	for k, v := range results {
-		l[i] = AuthorScore{k, v}
-		i += 1
-	}
-	sort.Sort(l)
-	return l
 }

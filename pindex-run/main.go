@@ -7,37 +7,47 @@ import (
 )
 
 var (
-	infile   *string = flag.String("infile", "in.json", ".json file to load reviews")
-	outfile  *string = flag.String("outfile", "out.json", ".json file to store scores")
+	dbfile   *string = flag.String("dbfile", "pindex.db", "database file")
+	load     *string = flag.String("load", "", ".json file to load")
 	dictfile *string = flag.String("dictfile", "/usr/share/dict/words", "dict file")
+	rescore  *bool   = flag.Bool("rescore", false, "attempt to rescore reviews")
 )
 
 func main() {
 	flag.Parse()
-	idx := pindex.NewIndex()
-	if err := idx.LoadFile(*infile); err != nil {
+	d, err := pindex.NewDatabase(*dbfile)
+	if err != nil {
 		log.Fatalf("%s", err)
 	}
+	if *load != "" {
+		d.Initialize()
+		if err := d.LoadFile(*load); err != nil {
+			log.Fatalf("%s", err)
+		}
+	}
 	log.Printf(
-		"%s: %d authors, %d reviews represented",
-		*infile,
-		idx.Authors(),
-		idx.Reviews(),
+		"%d authors, %d reviews represented",
+		d.Authors(),
+		d.Reviews(),
 	)
 	dict := pindex.NewDict(*dictfile)
 	log.Printf("%s: %d words", *dictfile, dict.Count())
 
-	log.Printf("Pitchformulaity:")
-	fr := pindex.SortedResults(idx.MapAverage(pindex.Pitchformulaity))
-	printTopN(5, fr)
+	m := pindex.IndexMap{
+		"Pitchformulaity":       pindex.Pitchformulaity,
+		"Naïve sentence length": pindex.NaïveSentenceLength,
+		"Words invented":        pindex.InventedWordsFunc(*dictfile),
+		"Character count":       pindex.CharacterCount,
+	}
+	if *rescore {
+		d.ScoreExistingReviews(m)
+	}
 
-	log.Printf("Average naïve sentence length:")
-	lr := pindex.SortedResults(idx.MapAverage(pindex.NaïveSentenceLength))
-	printTopN(5, lr)
-
-	log.Printf("Average number of invented words:")
-	ir := pindex.SortedResults(idx.MapAverage(pindex.InventedWordsFunc(*dictfile)))
-	printTopN(5, ir)
+	for name, _ := range m {
+		log.Printf("%s:", name)
+		r := d.AverageRanking(name)
+		printTopN(5, r)
+	}
 }
 
 func printTopN(n int, results []pindex.AuthorScore) {
