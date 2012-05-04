@@ -72,6 +72,42 @@ func TestSimpleCount(t *testing.T) {
 	}
 }
 
+func TestSanitization(t *testing.T) {
+	idx := NewIndex()
+	idx.Add(
+		Review{
+			Author: "Generic Author",
+			Body:   `<a href="some link">The HTML tags</a> should be <em>stripped</em>; the <div class="foo">stuff <span>should</span> be <strong>gone</strong></div>.`,
+		},
+	)
+	countBrackets := func(r Review) int {
+		t.Logf("%s", r.Body)
+		return strings.Count(strings.ToLower(r.Body), "<")
+	}
+	results := idx.MapAdditive(countBrackets)
+	score, ok := results["Generic Author"]
+	if !ok {
+		t.Fatalf("No valid Author in results")
+	}
+	if score != 0 {
+		t.Fatalf("expected 0 brackets, got %d", score)
+	}
+}
+
+func TestSentenceLength(t *testing.T) {
+	idx := NewIndex()
+	idx.Add(
+		Review{
+			Author: "Bob",
+			Body:   `Hey there. This is two sentences.`,
+		},
+	)
+	results := idx.MapAverage(NaïveSentenceLength)
+	if score := results["Bob"]; score != 3 {
+		t.Errorf("expected average sentence length 3, got %d", score)
+	}
+}
+
 func TestLoadFile(t *testing.T) {
 	idx := NewIndex()
 	if err := idx.LoadFile("first-batch.json"); err != nil {

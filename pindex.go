@@ -1,10 +1,13 @@
 package pindex
 
 import (
+	"bytes"
 	"encoding/json"
 	"fmt"
+	"github.com/peterbourgon/exp-html"
 	"io/ioutil"
 	"sort"
+	"strings"
 )
 
 type Review struct {
@@ -41,6 +44,7 @@ func (me *Index) LoadFile(filename string) error {
 }
 
 func (me *Index) Add(r Review) {
+	r.Body = stripHTML(r.Body)
 	if reviews, ok := me.repr[r.Author]; ok {
 		me.repr[r.Author] = append(reviews, r)
 	} else {
@@ -50,6 +54,14 @@ func (me *Index) Add(r Review) {
 
 func (me *Index) Authors() int {
 	return len(me.repr)
+}
+
+func (me *Index) Reviews() int {
+	count := 0
+	for _, reviews := range me.repr {
+		count += len(reviews)
+	}
+	return count
 }
 
 func (me *Index) MapAll(f func([]Review) int) map[string]int {
@@ -93,6 +105,22 @@ func (me *Index) MapAverage(f func(Review) int) map[string]int {
 			return int(float64(value) / float64(len(reviews)))
 		},
 	)
+}
+
+func stripHTML(s string) string {
+	z := html.NewTokenizer(bytes.NewBufferString(s))
+	results := []string{}
+	done := false
+	for !done {
+		tt := z.Next()
+		switch tt {
+		case html.TextToken:
+			results = append(results, string(z.Text()))
+		case html.ErrorToken:
+			done = true
+		}
+	}
+	return strings.Join(results, "")
 }
 
 type AuthorScore struct {
