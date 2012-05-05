@@ -24,6 +24,8 @@ func main() {
 	defer func() {
 		if err := r.Persist(*gobFile); err != nil {
 			log.Printf("persist: %s", err)
+		} else {
+			log.Printf("persisted to %s", *gobFile)
 		}
 	}()
 	log.Printf("%s loaded", bonus.Pluralize(len(*r), "review"))
