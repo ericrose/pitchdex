@@ -12,9 +12,10 @@ import (
 )
 
 type Review struct {
-	Author string
-	Body   string
-	Scores map[string]int
+	Author    string
+	Body      string
+	Permalink string
+	Scores    map[string]int
 }
 
 type Reviews map[int]Review
@@ -67,9 +68,10 @@ func (r *Reviews) ImportJSON(filename string) error {
 		}
 		if _, ok := (*r)[int(id)]; !ok {
 			(*r)[int(id)] = Review{
-				Author: jsonReview.Author,
-				Body:   jsonReview.Body,
-				Scores: map[string]int{},
+				Author:    jsonReview.Author,
+				Body:      jsonReview.Body,
+				Permalink: permalink,
+				Scores:    map[string]int{},
 			}
 		}
 	}

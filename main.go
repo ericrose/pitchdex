@@ -7,10 +7,12 @@ import (
 )
 
 var (
-	gobFile  *string = flag.String("gob", "data.gob", ".gob index for persistence")
-	jsonFile *string = flag.String("json", "", ".json to load to index (optional)")
-	dictFile *string = flag.String("dict", "/usr/share/dict/words", "dict file")
-	rescore  *bool   = flag.Bool("rescore", false, "force rescoring of all articles")
+	gobFile      *string = flag.String("gob", "data.gob", ".gob index for persistence")
+	jsonFile     *string = flag.String("json", "", ".json to load to index (optional)")
+	dictFile     *string = flag.String("dict", "/usr/share/dict/words", "dict file")
+	rescore      *bool   = flag.Bool("rescore", false, "force rescoring of all articles")
+	metadataFile *string = flag.String("metadata", "metadata.json", "output file for review metadata")
+	scoresFile   *string = flag.String("scores", "scores.json", "output file for scores data")
 )
 
 func main() {
@@ -41,6 +43,10 @@ func main() {
 
 	// Dump statistics
 	printStats(r)
+	log.Printf("writing metadata to %s...", *metadataFile)
+	r.WriteMetadata(*metadataFile)
+	log.Printf("writing scores to %s...", *scoresFile)
+	r.WriteScores(*scoresFile)
 }
 
 func loadReviews(gob, json string) *Reviews {
