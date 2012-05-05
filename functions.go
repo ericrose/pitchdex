@@ -1,4 +1,4 @@
-package pindex
+package main
 
 import (
 	"bytes"
@@ -8,15 +8,11 @@ import (
 
 func SimpleCount(r Review) int { return 1 }
 
-func baseWord(word string) string {
-	return strings.ToLower(strings.Trim(word, ` ,.;!?"-`))
-}
-
 func WordCount(r Review) int {
 	valid := 0
-	for _, word := range strings.Split(r.Body, " ") {
+	for _, word := range strings.Split(stripHTML(r.Body), " ") {
 		if baseWord(word) != "" {
-			valid += 1
+			valid++
 		}
 	}
 	return valid
@@ -26,6 +22,10 @@ func CharacterCount(r Review) int {
 	return len(stripHTML(r.Body))
 }
 
+func WordLength(r Review) int {
+	return int(float64(CharacterCount(r)) / float64(WordCount(r)))
+}
+
 func InventedWordsFunc(dictfile string) func(r Review) int {
 	dict := NewDict(dictfile)
 	return func(r Review) int {
@@ -33,7 +33,7 @@ func InventedWordsFunc(dictfile string) func(r Review) int {
 		for _, word := range strings.Split(r.Body, " ") {
 			if !dict.Has(baseWord(word)) {
 				// fmt.Printf("invented '%s'\n", baseWord(word))
-				count += 1
+				count++
 			}
 		}
 		return count
@@ -47,7 +47,7 @@ func NaïveSentenceLength(r Review) int {
 		if j < 0 {
 			break
 		}
-		sentences += 1
+		sentences++
 		i = i + j + 1
 	}
 	return int(float64(WordCount(r)) / float64(sentences))
@@ -62,6 +62,14 @@ func Pitchformulaity(r Review) int {
 		}
 	}
 	return score
+}
+
+//
+//
+//
+
+func baseWord(word string) string {
+	return strings.ToLower(strings.Trim(word, ` ,.;!?"-`))
 }
 
 func stripHTML(s string) string {
@@ -79,6 +87,10 @@ func stripHTML(s string) string {
 	}
 	return strings.Join(results, "")
 }
+
+//
+//
+//
 
 var (
 	PitchformulaWords = map[string]int{
