@@ -2,6 +2,7 @@ package main
 
 import (
 	"encoding/json"
+	"fmt"
 	"os"
 )
 
@@ -40,11 +41,9 @@ func (r *Reviews) WriteMetadata(filename string) error {
 }
 
 func (r *Reviews) WriteScores(filename string) error {
-	type AuthorScores struct {
-		Author string         `json:"author"`
-		Scores map[string]int `json:"scores"`
+	type ScoresStructure struct {
+		Authors []map[string]string `json:"aaData"`
 	}
-	type AuthorScoresArray []AuthorScores
 
 	f, err := os.Create(filename)
 	if err != nil {
@@ -53,23 +52,23 @@ func (r *Reviews) WriteScores(filename string) error {
 	defer f.Close()
 
 	ac := r.AuthorCount()
-	i, asa := 0, make(AuthorScoresArray, len(ac))
+	i, ss := 0, ScoresStructure{
+		Authors: make([]map[string]string, len(ac)),
+	}
 	for author, _ := range ac {
-		as := AuthorScores{
-			Author: author,
-			Scores: map[string]int{},
-		}
-
 		ids := r.By(func(rv Review) bool { return rv.Author == author })
-		for indexName, _ := range IndexDefinitions {
-			as.Scores[indexName] = r.AverageScore(ids, indexName)
+		m := map[string]string{
+			"Author":      author,
+			BullshitScore: fmt.Sprintf("%d", r.AverageScore(ids, BullshitScore)), // TODO fix per-author
 		}
-
-		asa[i] = as
+		for indexName, _ := range IndexDefinitions {
+			m[indexName] = fmt.Sprintf("%d", r.AverageScore(ids, indexName))
+		}
+		ss.Authors[i] = m
 		i++
 	}
 
-	buf, err := json.Marshal(asa)
+	buf, err := json.Marshal(ss)
 	if err != nil {
 		return err
 	}

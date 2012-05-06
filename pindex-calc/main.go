@@ -15,6 +15,8 @@ var (
 	scoresFile   *string = flag.String("scores", "scores.json", "output file for scores data")
 )
 
+const BullshitScore = "Overall Bullshit Score"
+
 func main() {
 	flag.Parse()
 	log.Printf("Derpin' it up")
@@ -31,7 +33,7 @@ func main() {
 	log.Printf("%s loaded", bonus.Pluralize(len(*r), "review"))
 
 	// Perform any necessary scoring
-	log.Printf("Scoring...")
+	log.Printf("scoring individual reviews...")
 	n := 0
 	for indexName, scoringFunc := range IndexDefinitions {
 		for id, review := range *r {
@@ -39,6 +41,14 @@ func main() {
 				(*r)[id].Scores[indexName] = scoringFunc(review)
 				n++
 			}
+		}
+	}
+	log.Printf("calculating %s...", BullshitScore)
+	allStats := GatherAll(r)
+	for id, review := range *r {
+		if _, ok := review.Scores[BullshitScore]; *rescore || !ok {
+			(*r)[id].Scores[BullshitScore] = calculateBullshit(review, allStats)
+			n++
 		}
 	}
 	log.Printf("calculated %d scores", n)

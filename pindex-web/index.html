@@ -1,21 +1,19 @@
-
 <!DOCTYPE html>
 <html lang="en">
+
   <head>
     <meta charset="utf-8">
     <title>Pitchdex: Pitchfork Bullshit Index</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta name="description" content="">
+    <meta name="description" content="Pitchdex ranks the Pitchfork reviewers according to their Bullshit.">
     <meta name="author" content="">
 
-    <link href="css/DT_bootstrap.css" rel="stylesheet">
-    <link href="css/bootstrap.css" rel="stylesheet">
+    <link rel="stylesheet" type="text/css" href="/css/bootstrap.min.css">
+    <link rel="stylesheet" type="text/css" href="/css/DT_bootstrap.css">
+
     <style>
-      body {
-        padding-top: 60px;
-      }
+      body { padding-top: 60px; }
     </style>
-    <link href="css/bootstrap-responsive.css" rel="stylesheet">
 
     <!--[if lt IE 9]>
       <script src="http://html5shim.googlecode.com/svn/trunk/html5.js"></script>
@@ -26,117 +24,6 @@
     <link rel="apple-touch-icon-precomposed" sizes="114x114" href="ico/apple-touch-icon-114-precomposed.png">
     <link rel="apple-touch-icon-precomposed" sizes="72x72" href="ico/apple-touch-icon-72-precomposed.png">
     <link rel="apple-touch-icon-precomposed" href="ico/apple-touch-icon-57-precomposed.png">
-
-    <script type="text/javascript" charset="utf-8">
-      /* Default class modification */
-      $.extend( $.fn.dataTableExt.oStdClasses, {
-        "sSortAsc": "header headerSortDown",
-        "sSortDesc": "header headerSortUp",
-        "sSortable": "header"
-      });
-
-      /* API method to get paging information */
-      $.fn.dataTableExt.oApi.fnPagingInfo = function ( oSettings )
-      {
-        return {
-          "iStart":         oSettings._iDisplayStart,
-          "iEnd":           oSettings.fnDisplayEnd(),
-          "iLength":        oSettings._iDisplayLength,
-          "iTotal":         oSettings.fnRecordsTotal(),
-          "iFilteredTotal": oSettings.fnRecordsDisplay(),
-          "iPage":          Math.ceil( oSettings._iDisplayStart / oSettings._iDisplayLength ),
-          "iTotalPages":    Math.ceil( oSettings.fnRecordsDisplay() / oSettings._iDisplayLength )
-        };
-      }
-
-      /* Bootstrap style pagination control */
-      $.extend( $.fn.dataTableExt.oPagination, {
-        "bootstrap": {
-          "fnInit": function( oSettings, nPaging, fnDraw ) {
-            var oLang = oSettings.oLanguage.oPaginate;
-            var fnClickHandler = function ( e ) {
-              e.preventDefault();
-              if ( oSettings.oApi._fnPageChange(oSettings, e.data.action) ) {
-                fnDraw( oSettings );
-              }
-            };
-
-            $(nPaging).addClass('pagination').append(
-              '<ul>'+
-                '<li class="prev disabled"><a href="#">&larr; '+oLang.sPrevious+'</a></li>'+
-                '<li class="next disabled"><a href="#">'+oLang.sNext+' &rarr; </a></li>'+
-              '</ul>'
-            );
-            var els = $('a', nPaging);
-            $(els[0]).bind( 'click.DT', { action: "previous" }, fnClickHandler );
-            $(els[1]).bind( 'click.DT', { action: "next" }, fnClickHandler );
-          },
-
-          "fnUpdate": function ( oSettings, fnDraw ) {
-            var iListLength = 5;
-            var oPaging = oSettings.oInstance.fnPagingInfo();
-            var an = oSettings.aanFeatures.p;
-            var i, j, sClass, iStart, iEnd, iHalf=Math.floor(iListLength/2);
-
-            if ( oPaging.iTotalPages < iListLength) {
-              iStart = 1;
-              iEnd = oPaging.iTotalPages;
-            }
-            else if ( oPaging.iPage <= iHalf ) {
-              iStart = 1;
-              iEnd = iListLength;
-            } else if ( oPaging.iPage >= (oPaging.iTotalPages-iHalf) ) {
-              iStart = oPaging.iTotalPages - iListLength + 1;
-              iEnd = oPaging.iTotalPages;
-            } else {
-              iStart = oPaging.iPage - iHalf + 1;
-              iEnd = iStart + iListLength - 1;
-            }
-
-            for ( i=0, iLen=an.length ; i<iLen ; i++ ) {
-              // Remove the middle elements
-              $('li:gt(0)', an[i]).filter(':not(:last)').remove();
-
-              // Add the new list items and their event handlers
-              for ( j=iStart ; j<=iEnd ; j++ ) {
-                sClass = (j==oPaging.iPage+1) ? 'class="active"' : '';
-                $('<li '+sClass+'><a href="#">'+j+'</a></li>')
-                  .insertBefore( $('li:last', an[i])[0] )
-                  .bind('click', function (e) {
-                    e.preventDefault();
-                    oSettings._iDisplayStart = (parseInt($('a', this).text(),10)-1) * oPaging.iLength;
-                    fnDraw( oSettings );
-                  });
-              }
-
-              // Add / remove disabled classes from the static elements
-              if ( oPaging.iPage === 0 ) {
-                $('li:first', an[i]).addClass('disabled');
-              } else {
-                $('li:first', an[i]).removeClass('disabled');
-              }
-
-              if ( oPaging.iPage === oPaging.iTotalPages-1 || oPaging.iTotalPages === 0 ) {
-                $('li:last', an[i]).addClass('disabled');
-              } else {
-                $('li:last', an[i]).removeClass('disabled');
-              }
-            }
-          }
-        }
-      });
-
-      /* Table initialisation */
-      $(document).ready(function() {
-        $('#example').dataTable( {
-          "sDom": "<'row'<'span8'l><'span8'f>r>t<'row'<'span8'i><'span8'p>>",
-          "sPaginationType": "bootstrap",
-          "oLanguage": {
-            "sLengthMenu": "_MENU_ records per page"
-          }
-        });
-      });
-    </script>
   </head>
 
   <body>
@@ -162,49 +49,72 @@
     </div>
 
     <div class="container">
-      <a name="ranking"></a>
-      <h1>The Rankings</h1>
+
+      <a name="home"></a>
+      <h1>What is the Pitchdex?</h1>
+      <br/>
+      <p>
+      The <strong>Pitchdex</strong> is an attempt to quantify the
+      amount of Bullshit that eminates from the music review site
+      <a href="http://www.pitchfork.com">Pitchfork</a>. Lorem ipsum dolor
+      sit amet, consectetur adipiscing elit. Ut arcu non felis,
+      tincidunt vitae arcu. Pellentesque sodales adipiscing ipsum, ut
+      est placerat venenatis id. Duis rhoncus porttitor risus in
+      Tristique arcu porttitor fringilla. Aenean pharetra nisl et
+      purus blandit laoreet vel diam sit amet. Sed sed adipiscing
+      aliquam arcu luctus. Vestibulum in erat in lacus malesuada
+      tincidunt non at this. In vel risus quam. Curabitur non sapien
+      lacus, at arcu vestibule. Aliquam erat volutpat. Aenean
+      dignissim gravida libero, at mollis et nulla consectetuer.
+      Vestibulum purus Wed, posuere mollis sit amet sed, iaculis a buy
+      button. Phasellus tincidunt ac ante. Quisque malesuada auctor
+      ante, at scelerisque nulla venenatis sit amet. Donec mattis orci
+      ac sapien pulvinar adipiscing.
+      </p>
+
+      <a name="ranking"><br/><br/><br/></a>
+      <h1>The rankings</h1>
+      <br/>
       <div id="dynamic">
       <table cellpadding="0" cellspacing="0" border="0" class="table table-striped table-bordered" id="scores">
         <thead>
           <tr>
-            <th>Author</th>
+            <th width="25%">Author</th>
+            <th>Overall Bullshit Score</th>
             <th>Pitchformulaity</th>
-            <th>A</th>
-            <th>B</th>
-            <th>C</th>
-            <th>D</th>
-            <th>E</th>
+            <th>Sentence length</th>
+            <th>Word count</th>
+            <th>Words invented</th>
           </tr>
         </thead>
         <tbody>
           <!-- -->
         </tbody>
-        <tfoot>
-          <tr>
-            <th>Author</th>
-            <th>Pitchformulaity</th>
-            <th>A</th>
-            <th>B</th>
-            <th>C</th>
-            <th>D</th>
-            <th>E</th>
-          </tr>
-        </tfoot>
       </table>
       </div>
 
+      <a name="data"><br/><br/><br/></a>
+      <h1>Per-review data</h1>
+      <br/>
+      <p>
+      Duis rhoncus porttitor risus in
+      Tristique arcu porttitor fringilla. Aenean pharetra nisl et
+      purus blandit laoreet vel diam sit amet. Sed sed adipiscing
+      aliquam arcu luctus. Vestibulum in erat in lacus malesuada
+      tincidunt non at this. In vel risus quam. Curabitur non sapien
+      lacus, at arcu vestibule. Aliquam erat volutpat. Aenean
+      dignissim gravida libero, at mollis et nulla consectetuer.
+      Vestibulum purus Wed, posuere mollis sit amet sed, iaculis a buy
+      button. Phasellus tincidunt ac ante. Quisque malesuada auctor
+      ante, at scelerisque nulla venenatis sit amet. Donec mattis orci
+      ac sapien pulvinar adipiscing.
+      </p>
+      <br/><br>
+
     </div> <!-- /container -->
 
-    <script src="js/jquery.js"></script>
-    <script src="js/jquery.datatables.min.js"></script>
-    <script type="text/javascript">
-      $(document).ready(function() {
-        $('#scores').dataTable( {
-          "bProcessing": true,
-          "sAjaxSource": '/scores'
-        });
-      });
-    </script>
+    <script type="text/javascript" charset="utf-8" language="javascript" src="/js/jquery.min.js"></script>
+    <script type="text/javascript" charset="utf-8" language="javascript" src="/js/jquery.dataTables.min.js"></script>
+    <script type="text/javascript" charset="utf-8" language="javascript" src="/js/DT_bootstrap.js"></script>
   </body>
 </html>
