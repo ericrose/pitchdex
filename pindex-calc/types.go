@@ -37,11 +37,12 @@ func (r *Reviews) ImportGob(filename string) error {
 }
 
 type JSONReview struct {
-	Author string `json:"reviewers"`
-	Body   string `json:"editorial"`
+	Author    string `json:"reviewers"`
+	Body      string `json:"editorial"`
+	Permalink string `json:"key"`
 }
 
-type JSONReviews map[string]JSONReview
+type JSONReviews []JSONReview
 
 func (r *Reviews) ImportJSON(filename string) error {
 	f, err := os.Open(filename)
@@ -53,15 +54,15 @@ func (r *Reviews) ImportJSON(filename string) error {
 	if err := json.NewDecoder(f).Decode(&jsonReviews); err != nil {
 		return err
 	}
-	for permalink, jsonReview := range jsonReviews {
-		id, err := strconv.ParseInt(strings.Split(permalink, "-")[0], 10, 64)
+	for _, jsonReview := range jsonReviews {
+		id, err := strconv.ParseInt(strings.Split(jsonReview.Permalink, "-")[0], 10, 64)
 		if err != nil {
-			return fmt.Errorf("%s: %s", permalink, err)
+			return fmt.Errorf("%s: %s", jsonReview.Permalink, err)
 		}
 		if jsonReview.Author == "" || jsonReview.Body == "" {
 			return fmt.Errorf(
 				"%s: author %dB, body %dB",
-				permalink,
+				jsonReview.Permalink,
 				len(jsonReview.Author),
 				len(jsonReview.Body),
 			)
@@ -70,7 +71,7 @@ func (r *Reviews) ImportJSON(filename string) error {
 			(*r)[int(id)] = Review{
 				Author:    jsonReview.Author,
 				Body:      jsonReview.Body,
-				Permalink: permalink,
+				Permalink: jsonReview.Permalink,
 				Scores:    map[string]int{},
 			}
 		}
