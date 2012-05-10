@@ -23,9 +23,20 @@ func main() {
 		http.Handle(route, http.StripPrefix(strip, http.FileServer(http.Dir(serve))))
 	}
 	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
+		log.Printf(
+			"serving client %s (via %s)",
+			r.RemoteAddr,
+			func() string {
+				if r.Referer() == "" {
+					return "direct"
+				}
+				return r.Referer()
+			}(),
+		)
 		http.ServeFile(w, r, "index.html")
 	})
 
 	endpoint := fmt.Sprintf("%s:%d", *httpHost, *httpPort)
+	log.Printf("serving on %s", endpoint)
 	log.Fatalf("%s", http.ListenAndServe(endpoint, nil))
 }

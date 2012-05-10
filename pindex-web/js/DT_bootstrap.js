@@ -96,7 +96,7 @@ $.extend( $.fn.dataTableExt.oPagination, {
 
 /* Table initialisation */
 $(document).ready(function() {
-	$('#scores').dataTable({
+	$('#authors').dataTable({
 		"bProcessing": true,
 		"sPaginationType": "bootstrap",
 		"oLanguage": {
@@ -104,7 +104,7 @@ $(document).ready(function() {
 			"sInfo": "Showing _START_ to _END_ of _TOTAL_ authors",
 		},
 		"sDom": "<'row'<'span6'l><'span6'f>r>t<'row'<'span6'i><'span6'p>>",
-		"sAjaxSource": '/data/scores.json',
+		"sAjaxSource": '/data/authors.json',
 		"aoColumns": [
 			{ "mDataProp": "Author" },
 			{ "mDataProp": "Overall Bullshit Score" },
@@ -128,7 +128,6 @@ $(document).ready(function() {
 			{ "mDataProp": "ID" },
 			{ "mDataProp": "Title" },
 			{ "mDataProp": "Author" },
-			{ "mDataProp": "Overall Bullshit Score" },
 			{ "mDataProp": "Pitchformulaity" },
 			{ "mDataProp": "Naïve sentence length" },
 			{ "mDataProp": "Word count" },

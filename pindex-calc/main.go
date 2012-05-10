@@ -7,12 +7,12 @@ import (
 )
 
 var (
-	gobFile      *string = flag.String("gob", "data.gob", ".gob index for persistence")
-	jsonFile     *string = flag.String("json", "", ".json to load to index (optional)")
-	dictFile     *string = flag.String("dict", "/usr/share/dict/words", "dict file")
-	rescore      *bool   = flag.Bool("rescore", false, "force rescoring of all articles")
-	metadataFile *string = flag.String("metadata", "metadata.json", "output file for review metadata")
-	scoresFile   *string = flag.String("scores", "scores.json", "output file for scores data")
+	gobFile     *string = flag.String("gob", "data.gob", ".gob index for persistence")
+	jsonFile    *string = flag.String("json", "", ".json to load to index (optional)")
+	dictFile    *string = flag.String("dict", "/usr/share/dict/words", "dict file")
+	rescore     *bool   = flag.Bool("rescore", false, "force rescoring of all articles")
+	reviewsFile *string = flag.String("reviews", "reviews.json", "output file for per-review data")
+	authorsFile *string = flag.String("authors", "authors.json", "output file for per-author data")
 )
 
 const BullshitScore = "Overall Bullshit Score"
@@ -55,10 +55,10 @@ func main() {
 
 	// Dump statistics
 	printStats(r)
-	log.Printf("writing metadata to %s...", *metadataFile)
-	r.WriteMetadata(*metadataFile)
-	log.Printf("writing scores to %s...", *scoresFile)
-	r.WriteScores(*scoresFile)
+	log.Printf("writing authors data to %s...", *authorsFile)
+	r.WriteAuthors(*authorsFile)
+	log.Printf("writing reviews data to %s...", *reviewsFile)
+	r.WriteReviews(*reviewsFile)
 }
 
 func loadReviews(gob, json string) *Reviews {

@@ -6,53 +6,20 @@ import (
 	"os"
 )
 
-func (r *Reviews) WriteMetadata(filename string) error {
-	type ReviewMetadata struct {
-		ID        int    `json:"id"`
-		Permalink string `json:"permalink"`
-	}
-	type ReviewMetadatas []ReviewMetadata
-
+func (r *Reviews) WriteAuthors(filename string) error {
+	// Create the file
 	f, err := os.Create(filename)
 	if err != nil {
 		return err
 	}
 	defer f.Close()
 
-	i, mds := 0, make(ReviewMetadatas, len(*r))
-	for id, review := range *r {
-		mds[i] = ReviewMetadata{
-			ID:        id,
-			Permalink: review.Permalink,
-		}
-		i++
-	}
-
-	buf, err := json.Marshal(mds)
-	if err != nil {
-		return err
-	}
-	_, err = f.Write(buf)
-	if err != nil {
-		return err
-	}
-
-	return nil
-}
-
-func (r *Reviews) WriteScores(filename string) error {
-	type ScoresStructure struct {
+	// Build the in-memory structure
+	type AuthorsStructure struct {
 		Authors []map[string]string `json:"aaData"`
 	}
-
-	f, err := os.Create(filename)
-	if err != nil {
-		return err
-	}
-	defer f.Close()
-
 	ac := r.AuthorCount()
-	i, ss := 0, ScoresStructure{
+	i, as := 0, AuthorsStructure{
 		Authors: make([]map[string]string, len(ac)),
 	}
 	for author, _ := range ac {
@@ -64,11 +31,12 @@ func (r *Reviews) WriteScores(filename string) error {
 		for indexName, _ := range IndexDefinitions {
 			m[indexName] = fmt.Sprintf("%d", r.AverageScore(ids, indexName))
 		}
-		ss.Authors[i] = m
+		as.Authors[i] = m
 		i++
 	}
 
-	buf, err := json.Marshal(ss)
+	// Dump the structure to the file
+	buf, err := json.Marshal(as)
 	if err != nil {
 		return err
 	}
@@ -76,6 +44,45 @@ func (r *Reviews) WriteScores(filename string) error {
 	if err != nil {
 		return err
 	}
+	return nil
+}
 
+func (r *Reviews) WriteReviews(filename string) error {
+	// Create the file
+	f, err := os.Create(filename)
+	if err != nil {
+		return err
+	}
+	defer f.Close()
+
+	// Build the in-memory structure
+	type ReviewsStructure struct {
+		Reviews []map[string]string `json:"aaData"`
+	}
+	i, rs := 0, ReviewsStructure{
+		Reviews: make([]map[string]string, len(*r)),
+	}
+	for id, review := range *r {
+		m := map[string]string{
+			"ID":     fmt.Sprintf("%d", id),
+			"Title":  review.Permalink,
+			"Author": review.Author,
+		}
+		for indexName, score := range review.Scores {
+			m[indexName] = fmt.Sprintf("%d", score)
+		}
+		rs.Reviews[i] = m
+		i++
+	}
+
+	// Dump the structure to the file
+	buf, err := json.Marshal(rs)
+	if err != nil {
+		return err
+	}
+	_, err = f.Write(buf)
+	if err != nil {
+		return err
+	}
 	return nil
 }
