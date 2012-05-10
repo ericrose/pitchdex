@@ -104,7 +104,7 @@ $(document).ready(function() {
 			"sInfo": "Showing _START_ to _END_ of _TOTAL_ authors",
 		},
 		"sDom": "<'row'<'span6'l><'span6'f>r>t<'row'<'span6'i><'span6'p>>",
-		"sAjaxSource": '/scores',
+		"sAjaxSource": '/data/scores.json',
 		"aoColumns": [
 			{ "mDataProp": "Author" },
 			{ "mDataProp": "Overall Bullshit Score" },
@@ -114,5 +114,26 @@ $(document).ready(function() {
 			{ "mDataProp": "Words invented" }
 		],
 		"aaSorting": [[ 1, "desc" ]]
+	});
+	$('#reviews').dataTable({
+		"bProcessing": true,
+		"sPaginationType": "bootstrap",
+		"oLanguage": {
+			"sLengthMenu": "_MENU_ reviews per page",
+			"sInfo": "Showing _START_ to _END_ of _TOTAL_ reviews",
+		},
+		"sDom": "<'row'<'span6'l><'span6'f>r>t<'row'<'span6'i><'span6'p>>",
+		"sAjaxSource": '/data/reviews.json',
+		"aoColumns": [
+			{ "mDataProp": "ID" },
+			{ "mDataProp": "Title" },
+			{ "mDataProp": "Author" },
+			{ "mDataProp": "Overall Bullshit Score" },
+			{ "mDataProp": "Pitchformulaity" },
+			{ "mDataProp": "Naïve sentence length" },
+			{ "mDataProp": "Word count" },
+			{ "mDataProp": "Words invented" }
+		],
+		"aaSorting": [[ 3, "desc" ]]
 	});
 });
