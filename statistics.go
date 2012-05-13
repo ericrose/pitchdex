@@ -1,6 +1,7 @@
 package main
 
 import (
+	"log"
 	"math"
 )
 
@@ -13,9 +14,9 @@ type StatisticalData struct {
 	StandardDeviation int
 }
 
-func Gather(r *Reviews, indexName string) StatisticalData {
+func Gather(reviews Reviews, indexName string) StatisticalData {
 	first, min, total, max, count := true, 0, 0, 0, 0
-	for _, review := range *r {
+	for _, review := range reviews {
 		if score, ok := review.Scores[indexName]; ok {
 			if first || score < min {
 				min = score
@@ -30,9 +31,10 @@ func Gather(r *Reviews, indexName string) StatisticalData {
 		}
 	}
 	mean := int(float64(total) / float64(count))
+
+	// http://en.wikipedia.org/wiki/Standard_deviation
 	sqdev := 0.0
-	for _, review := range *r {
-		// http://en.wikipedia.org/wiki/Standard_deviation
+	for _, review := range reviews {
 		x := review.Scores[indexName] - mean
 		sqdev += math.Pow(float64(x), 2)
 	}
@@ -50,10 +52,10 @@ func Gather(r *Reviews, indexName string) StatisticalData {
 
 type AllStatisticalData map[string]StatisticalData
 
-func GatherAll(r *Reviews) AllStatisticalData {
+func GatherAll(reviews Reviews) AllStatisticalData {
 	allStats := AllStatisticalData{}
 	for indexName, _ := range IndexDefinitions {
-		allStats[indexName] = Gather(r, indexName)
+		allStats[indexName] = Gather(reviews, indexName)
 	}
 	return allStats
 }
@@ -64,21 +66,11 @@ func DeviationsFromMinimum(score int, stats StatisticalData) int {
 			return i
 		}
 	}
+	log.Printf(
+		"%d >10 standard deviations (%d) from minimum %d",
+		score,
+		stats.StandardDeviation,
+		stats.Minimum,
+	)
 	return 10
-}
-
-func calculateBullshit(review Review, allStats AllStatisticalData) int {
-	return 10*DeviationsFromMinimum(
-		review.Scores["Pitchformulaity"],
-		allStats["Pitchformulaity"],
-	) +
-		5*DeviationsFromMinimum(
-			review.Scores["Sentence length"],
-			allStats["Sentence length"],
-		) +
-		2*DeviationsFromMinimum(
-			review.Scores["Word count"],
-			allStats["Word count"],
-		) +
-		review.Scores["Words invented"]
 }

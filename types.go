@@ -12,6 +12,7 @@ import (
 )
 
 type Review struct {
+	ID        int
 	Author    string
 	Body      string
 	Permalink string
@@ -20,7 +21,7 @@ type Review struct {
 
 type Reviews map[int]Review
 
-func (r *Reviews) ImportGob(filename string) error {
+func (r Reviews) ImportGob(filename string) error {
 	f, err := os.Open(filename)
 	if err != nil {
 		return err
@@ -31,7 +32,7 @@ func (r *Reviews) ImportGob(filename string) error {
 		return err
 	}
 	for id, review := range reviews {
-		(*r)[id] = review
+		r[id] = review
 	}
 	return nil
 }
@@ -44,7 +45,7 @@ type JSONReview struct {
 
 type JSONReviews []JSONReview
 
-func (r *Reviews) ImportJSON(filename string) error {
+func (r Reviews) ImportJSON(filename string, reimport bool) error {
 	f, err := os.Open(filename)
 	if err != nil {
 		return err
@@ -67,8 +68,9 @@ func (r *Reviews) ImportJSON(filename string) error {
 				len(jsonReview.Body),
 			)
 		}
-		if _, ok := (*r)[int(id)]; !ok {
-			(*r)[int(id)] = Review{
+		if _, ok := r[int(id)]; !ok || reimport {
+			r[int(id)] = Review{
+				ID:        int(id),
 				Author:    jsonReview.Author,
 				Body:      jsonReview.Body,
 				Permalink: jsonReview.Permalink,
@@ -79,7 +81,7 @@ func (r *Reviews) ImportJSON(filename string) error {
 	return nil
 }
 
-func (r *Reviews) Persist(filename string) error {
+func (r Reviews) Persist(filename string) error {
 	f, err := os.Create(filename)
 	if err != nil {
 		return err
@@ -91,9 +93,9 @@ func (r *Reviews) Persist(filename string) error {
 type Filter func(Review) bool
 type IDSlice []int
 
-func (r *Reviews) By(f Filter) IDSlice {
+func (r Reviews) By(f Filter) IDSlice {
 	matching := IDSlice{}
-	for id, review := range *r {
+	for id, review := range r {
 		if f(review) {
 			matching = append(matching, id)
 		}
@@ -101,9 +103,9 @@ func (r *Reviews) By(f Filter) IDSlice {
 	return matching
 }
 
-func (r *Reviews) AuthorCount() map[string]int {
+func (r Reviews) AuthorCount() map[string]int {
 	m := map[string]int{}
-	for _, review := range *r {
+	for _, review := range r {
 		if _, ok := m[review.Author]; ok {
 			m[review.Author]++
 		} else {
@@ -113,15 +115,15 @@ func (r *Reviews) AuthorCount() map[string]int {
 	return m
 }
 
-func (r *Reviews) TotalScore(ids IDSlice, indexName string) int {
+func (r Reviews) TotalScore(ids IDSlice, indexName string) int {
 	v := 0
 	for _, id := range ids {
-		v += (*r)[id].Scores[indexName]
+		v += r[id].Scores[indexName]
 	}
 	return v
 }
 
-func (r *Reviews) AverageScore(ids IDSlice, indexName string) int {
+func (r Reviews) AverageScore(ids IDSlice, indexName string) int {
 	return int(float64(r.TotalScore(ids, indexName)) / float64(len(ids)))
 }
 
@@ -167,13 +169,13 @@ type ScoringFunction func(Review) int
 
 type Dict map[string]struct{}
 
-func NewDict(filename string) *Dict {
-	d := &Dict{}
+func NewDict(filename string) Dict {
+	d := Dict{}
 	d.Load(filename)
 	return d
 }
 
-func (d *Dict) Load(filename string) {
+func (d Dict) Load(filename string) {
 	f, err := os.Open(filename)
 	if err != nil {
 		return
@@ -185,15 +187,15 @@ func (d *Dict) Load(filename string) {
 		if err != nil {
 			break
 		}
-		(*d)[strings.TrimSpace(strings.ToLower(line))] = struct{}{}
+		d[strings.TrimSpace(strings.ToLower(line))] = struct{}{}
 	}
 }
 
-func (d *Dict) Count() int {
-	return len(*d)
+func (d Dict) Count() int {
+	return len(d)
 }
 
-func (d *Dict) Has(s string) bool {
-	_, ok := (*d)[s]
+func (d Dict) Has(s string) bool {
+	_, ok := d[s]
 	return ok
 }

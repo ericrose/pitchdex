@@ -107,6 +107,7 @@ $(document).ready(function() {
 		"sAjaxSource": '/data/authors.json',
 		"aoColumns": [
 			{ "mDataProp": "Author" },
+			{ "mDataProp": "Reviews" },
 			{ "mDataProp": "Overall Bullshit Score" },
 			{ "mDataProp": "Pitchformulaity" },
 			{ "mDataProp": "Naïve sentence length" },
@@ -115,7 +116,7 @@ $(document).ready(function() {
 		],
 		"aaSorting": [[ 1, "desc" ]]
 	});
-	$('#reviews').dataTable({
+	/* $('#reviews').dataTable({
 		"bProcessing": true,
 		"sPaginationType": "bootstrap",
 		"oLanguage": {
@@ -134,5 +135,5 @@ $(document).ready(function() {
 			{ "mDataProp": "Words invented" }
 		],
 		"aaSorting": [[ 3, "desc" ]]
-	});
+	}); */
 });
