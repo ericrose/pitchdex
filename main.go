@@ -8,7 +8,9 @@ import (
 )
 
 var (
+	dbFile      *string = flag.String("db", "pitchdex.db", "database file")
 	jsonFile    *string = flag.String("import", "", "JSON file to import (optional)")
+	reimport    *bool   = flag.Bool("reimport", false, "reimport existing reviews")
 	rescore     *bool   = flag.Bool("rescore", false, "rescore everything")
 	dictFile    *string = flag.String("dict", "/usr/share/dict/words", "dict file")
 	authorsFile *string = flag.String("authors", "data/authors.json", "authors output file")
@@ -21,11 +23,22 @@ func main() {
 	flag.Parse()
 
 	// Load
-
-	reviews := Reviews{}
+	db, err := GetDB(*dbFile)
+	if err != nil {
+		log.Fatalf("get database failed: %s", err)
+	}
+	if err := Initialize(db); err != nil {
+		log.Fatalf("initialize DB: %s", err)
+	}
+	log.Printf("reading existing Reviews")
+	reviews, err := SelectAllReviews(db)
+	if err != nil {
+		log.Fatalf("%s", err)
+	}
+	log.Printf("read %d Reviews from %s", len(reviews), *dbFile)
 	if *jsonFile != "" {
 		log.Printf("importing %s", *jsonFile)
-		if err := reviews.ImportJSON(*jsonFile); err != nil {
+		if err := reviews.ImportJSON(*jsonFile, *reimport); err != nil {
 			log.Printf("%s", err)
 		}
 	}
@@ -78,6 +91,9 @@ func main() {
 	}
 
 	// Write
+	if err := InsertReviews(db, reviews); err != nil {
+		log.Fatalf("%s", err)
+	}
 	if err := WriteAuthors(authors, *authorsFile); err != nil {
 		log.Fatalf("%s", err)
 	}

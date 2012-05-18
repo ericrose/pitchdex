@@ -12,19 +12,6 @@ func GetDB(filename string) (*sql.DB, error) {
 }
 
 func Initialize(db *sql.DB) error {
-	// Drop all tables in the test database.
-	rows, err := db.Query("SELECT tbl_name FROM sqlite_master")
-	if err != nil {
-		return fmt.Errorf("failed to enumerate tables: %v", err)
-	}
-	for rows.Next() {
-		var table string
-		if rows.Scan(&table) == nil {
-			if _, err := db.Exec("DROP TABLE " + table); err != nil {
-				return err
-			}
-		}
-	}
 	statements := []string{
 		"CREATE TABLE reviews (id INT PRIMARY KEY, body TEXT)",
 		"CREATE TABLE authors (name TEXT PRIMARY KEY)",
@@ -37,9 +24,7 @@ func Initialize(db *sql.DB) error {
 		"CREATE INDEX author_score_nsc ON author_scores (name, score)",
 	}
 	for _, statement := range statements {
-		if _, err := db.Exec(statement); err != nil {
-			return fmt.Errorf("%s: %s", statement, err)
-		}
+		db.Exec(statement) // Best-effort is.. best.. effort.
 	}
 	return nil
 }

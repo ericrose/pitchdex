@@ -28,7 +28,7 @@ type JSONReview struct {
 
 type JSONReviews []JSONReview
 
-func (r Reviews) ImportJSON(filename string) error {
+func (r Reviews) ImportJSON(filename string, reimport bool) error {
 	f, err := os.Open(filename)
 	if err != nil {
 		return err
@@ -51,12 +51,14 @@ func (r Reviews) ImportJSON(filename string) error {
 				len(jsonReview.Body),
 			)
 		}
-		r[int(id)] = Review{
-			ID:        int(id),
-			Author:    jsonReview.Author,
-			Body:      jsonReview.Body,
-			Permalink: jsonReview.Permalink,
-			Scores:    map[string]int{},
+		if _, ok := r[int(id)]; !ok || reimport {
+			r[int(id)] = Review{
+				ID:        int(id),
+				Author:    jsonReview.Author,
+				Body:      jsonReview.Body,
+				Permalink: jsonReview.Permalink,
+				Scores:    map[string]int{},
+			}
 		}
 	}
 	return nil
