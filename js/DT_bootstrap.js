@@ -116,15 +116,16 @@ $(document).ready(function() {
 		],
 		"aaSorting": [[ 1, "desc" ]]
 	});
-	/* $('#reviews').dataTable({
+	$('#reviews').dataTable({
 		"bProcessing": true,
+		"bServerSide": true,
 		"sPaginationType": "bootstrap",
 		"oLanguage": {
 			"sLengthMenu": "_MENU_ reviews per page",
 			"sInfo": "Showing _START_ to _END_ of _TOTAL_ reviews",
 		},
 		"sDom": "<'row'<'span6'l><'span6'f>r>t<'row'<'span6'i><'span6'p>>",
-		"sAjaxSource": '/data/reviews.json',
+		"sAjaxSource": '/ssp/reviews',
 		"aoColumns": [
 			{ "mDataProp": "ID" },
 			{ "mDataProp": "Title" },
@@ -135,5 +136,5 @@ $(document).ready(function() {
 			{ "mDataProp": "Words invented" }
 		],
 		"aaSorting": [[ 3, "desc" ]]
-	}); */
+	});
 });

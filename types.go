@@ -2,7 +2,6 @@ package main
 
 import (
 	"bufio"
-	"encoding/gob"
 	"encoding/json"
 	"fmt"
 	"os"
@@ -21,22 +20,6 @@ type Review struct {
 
 type Reviews map[int]Review
 
-func (r Reviews) ImportGob(filename string) error {
-	f, err := os.Open(filename)
-	if err != nil {
-		return err
-	}
-	defer f.Close()
-	reviews := Reviews{}
-	if err := gob.NewDecoder(f).Decode(&reviews); err != nil {
-		return err
-	}
-	for id, review := range reviews {
-		r[id] = review
-	}
-	return nil
-}
-
 type JSONReview struct {
 	Author    string `json:"reviewers"`
 	Body      string `json:"editorial"`
@@ -45,7 +28,7 @@ type JSONReview struct {
 
 type JSONReviews []JSONReview
 
-func (r Reviews) ImportJSON(filename string, reimport bool) error {
+func (r Reviews) ImportJSON(filename string) error {
 	f, err := os.Open(filename)
 	if err != nil {
 		return err
@@ -68,26 +51,15 @@ func (r Reviews) ImportJSON(filename string, reimport bool) error {
 				len(jsonReview.Body),
 			)
 		}
-		if _, ok := r[int(id)]; !ok || reimport {
-			r[int(id)] = Review{
-				ID:        int(id),
-				Author:    jsonReview.Author,
-				Body:      jsonReview.Body,
-				Permalink: jsonReview.Permalink,
-				Scores:    map[string]int{},
-			}
+		r[int(id)] = Review{
+			ID:        int(id),
+			Author:    jsonReview.Author,
+			Body:      jsonReview.Body,
+			Permalink: jsonReview.Permalink,
+			Scores:    map[string]int{},
 		}
 	}
 	return nil
-}
-
-func (r Reviews) Persist(filename string) error {
-	f, err := os.Create(filename)
-	if err != nil {
-		return err
-	}
-	defer f.Close()
-	return gob.NewEncoder(f).Encode(r)
 }
 
 type Filter func(Review) bool

@@ -8,12 +8,9 @@ import (
 )
 
 var (
-	gobFile     *string = flag.String("gobfile", "data.gob", "pitchdex data source")
 	jsonFile    *string = flag.String("import", "", "JSON file to import (optional)")
-	reimport    *bool   = flag.Bool("reimport", false, "force re-import of existant reviews")
-	rescore     *bool   = flag.Bool("rescore", false, "rescore all reviews")
+	rescore     *bool   = flag.Bool("rescore", false, "rescore everything")
 	dictFile    *string = flag.String("dict", "/usr/share/dict/words", "dict file")
-	reviewsFile *string = flag.String("reviews", "data/reviews.json", "reviews output file")
 	authorsFile *string = flag.String("authors", "data/authors.json", "authors output file")
 	serve       *bool   = flag.Bool("serve", true, "serve HTTP")
 	httpHost    *string = flag.String("http-host", "0.0.0.0", "HTTP host")
@@ -24,13 +21,11 @@ func main() {
 	flag.Parse()
 
 	// Load
+
 	reviews := Reviews{}
-	if err := reviews.ImportGob(*gobFile); err != nil {
-		log.Printf("%s", err)
-	}
 	if *jsonFile != "" {
 		log.Printf("importing %s", *jsonFile)
-		if err := reviews.ImportJSON(*jsonFile, *reimport); err != nil {
+		if err := reviews.ImportJSON(*jsonFile); err != nil {
 			log.Printf("%s", err)
 		}
 	}
@@ -83,12 +78,6 @@ func main() {
 	}
 
 	// Write
-	if err := reviews.Persist(*gobFile); err != nil {
-		log.Fatalf("%s", err)
-	}
-	if err := WriteReviews(reviews, *reviewsFile); err != nil {
-		log.Fatalf("%s", err)
-	}
 	if err := WriteAuthors(authors, *authorsFile); err != nil {
 		log.Fatalf("%s", err)
 	}
@@ -109,7 +98,7 @@ func main() {
 	}
 	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
 		log.Printf(
-			"serving client %s (via %s)",
+			"serving client %s (via %s) -- %s",
 			r.RemoteAddr,
 			func() string {
 				if r.Referer() == "" {
@@ -117,6 +106,7 @@ func main() {
 				}
 				return r.Referer()
 			}(),
+			r.RequestURI,
 		)
 		http.ServeFile(w, r, "index.html")
 	})
