@@ -257,10 +257,12 @@ func (db DB) SelectAllReviewsWithout(scoreName string) (Reviews, error) {
 	reviews := Reviews{}
 	ids := []int{}
 	rows, err := db.db.Query(
-		`SELECT r.id
-		 FROM reviews r, review_scores rs
-		 WHERE r.id = rs.review_id
-		 AND ? NOT IN rs.name`,
+		`SELECT DISTINCT id
+		 FROM reviews r
+		 WHERE id NOT IN
+		 (SELECT DISTINCT review_id
+		  FROM review_scores
+		  WHERE name = ?)`,
 		scoreName,
 	)
 	if err != nil {

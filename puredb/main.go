@@ -27,7 +27,11 @@ func main() {
 	if err != nil {
 		log.Fatalf("%s: %s", *dbFile, err)
 	}
+	if err := db.Initialize(); err != nil {
+		log.Fatalf("%s: Initialize: %s", *dbFile, err)
+	}
 	if *jsonFile != "" {
+		log.Printf("importing %s...", *jsonFile)
 		reviews, err := GetReviewsFromJSON(*jsonFile)
 		if err != nil {
 			log.Fatalf("%s: %s", *jsonFile, err)
@@ -41,8 +45,10 @@ func main() {
 		if err := db.InsertReviews(reviews, *overwrite); err != nil {
 			log.Fatalf("Insert: %s", err)
 		}
+		log.Printf("loading done")
+	} else {
+		log.Printf("-import not specified; not loading new data")
 	}
-	log.Printf("loading done, moving on to scoring")
 
 	// SCORING
 	// For every score-name in our little internal list,
