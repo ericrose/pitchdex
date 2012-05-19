@@ -22,6 +22,22 @@ var (
 func main() {
 	flag.Parse()
 
+	// LOADING
+	// If JSON is provided, load it into a JSON struct.
+	//   For every ID in the JSON Reviews,
+	//     if reimport || !db.Has, db.Insert
+	//
+	// SCORING
+	// For every score-name in our little internal list,
+	//   reviewsToScore =
+	//     rescore all ? all IDs : IDs that don't have that score yet
+	//   for every reviewToScore,
+	//     load and score
+	//
+	// WRITING (optional)
+	//
+	// SERVING
+
 	// Load
 	db, err := GetDB(*dbFile)
 	if err != nil {
