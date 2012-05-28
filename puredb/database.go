@@ -277,3 +277,9 @@ func (db DB) SelectAllReviewsWithout(scoreName string) (Reviews, error) {
 	}
 	return db.SelectReviews(ids)
 }
+
+func (db DB) SelectReviewCount() int {
+	var count int
+	db.db.QueryRow("SELECT Count(*) FROM reviews").Scan(&count)
+	return count
+}

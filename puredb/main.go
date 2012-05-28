@@ -30,6 +30,7 @@ func main() {
 	if err := db.Initialize(); err != nil {
 		log.Fatalf("%s: Initialize: %s", *dbFile, err)
 	}
+	log.Printf("the database contains %d Reviews", db.SelectReviewCount())
 	if *jsonFile != "" {
 		log.Printf("importing %s...", *jsonFile)
 		reviews, err := GetReviewsFromJSON(*jsonFile)
@@ -93,7 +94,7 @@ func main() {
 	db.InsertReviewScores(scores, true)
 
 	// SERVING
-	staticDirs := []string{"js", "css", "img", "ico", "data"}
+	staticDirs := []string{"js", "css", "img", "ico"}
 	for _, d := range staticDirs {
 		route := fmt.Sprintf("/%s/", d)
 		strip := fmt.Sprintf("/%s", d)
