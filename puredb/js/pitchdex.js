@@ -114,7 +114,7 @@ $(document).ready(function() {
 			{ "mDataProp": "Word count" },
 			{ "mDataProp": "Words invented" }
 		],
-		"aaSorting": [[ 1, "desc" ]]
+		"aaSorting": [[ 3, "desc" ]]
 	});
 	$('#reviews').dataTable({
 		"bProcessing": true,

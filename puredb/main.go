@@ -2,6 +2,7 @@ package main
 
 import (
 	"flag"
+	"time"
 	"fmt"
 	"log"
 	"net/http"
@@ -109,7 +110,8 @@ func main() {
 	}
 	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
 		log.Printf(
-			"serving client %s (via %s) -- %s",
+			"%s: serving client %s (via %s)",
+			r.RequestURI,
 			r.RemoteAddr,
 			func() string {
 				if r.Referer() == "" {
@@ -117,9 +119,24 @@ func main() {
 				}
 				return r.Referer()
 			}(),
-			r.RequestURI,
 		)
 		http.ServeFile(w, r, "index.html")
+	})
+	http.HandleFunc("/ssp/reviews", func(w http.ResponseWriter, r *http.Request) {
+		began := time.Now()
+		buf, err := db.QueryReviews(r)
+		if err != nil {
+			log.Printf(
+				"/ssp/reviews: error: %s (%v)",
+				err,
+				time.Since(began),
+			)
+			w.WriteHeader(http.StatusBadRequest)
+			return
+		}
+		log.Printf("/ssp/reviews: %d bytes (%v)", len(buf), time.Since(began))
+		log.Printf(">> \n\n%s\n\n", string(buf))
+		w.Write(buf)
 	})
 
 	endpoint := fmt.Sprintf("%s:%d", *httpHost, *httpPort)

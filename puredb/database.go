@@ -26,6 +26,7 @@ func (db DB) Initialize() error {
 		"CREATE TABLE review_scores (review_id INT, name STRING, score INT)",
 		"CREATE TABLE author_scores (author_name STRING, name STRING, score INT)",
 		"CREATE TABLE authorship (review_id INT, author_name STRING)",
+		"CREATE INDEX review_id ON reviews (id)",
 		"CREATE INDEX review_score_name ON review_scores (name)",
 		"CREATE INDEX author_score_name ON author_scores (name)",
 		"CREATE INDEX review_score_nsc ON review_scores (name, score)",
