@@ -4,6 +4,7 @@ import (
 	"database/sql"
 	"fmt"
 	_ "github.com/mattn/go-sqlite3"
+	"log"
 	"strings"
 )
 
@@ -21,19 +22,22 @@ func GetDB(filename string) (DB, error) {
 
 func (db DB) Initialize() error {
 	statements := []string{
-		"CREATE TABLE reviews (id INT PRIMARY KEY, body TEXT)",
+		"CREATE TABLE reviews (id INT PRIMARY KEY, title STRING, body TEXT)",
 		"CREATE TABLE authors (name TEXT PRIMARY KEY)",
 		"CREATE TABLE review_scores (review_id INT, name STRING, score INT)",
 		"CREATE TABLE author_scores (author_name STRING, name STRING, score INT)",
 		"CREATE TABLE authorship (review_id INT, author_name STRING)",
 		"CREATE INDEX review_id ON reviews (id)",
+		"CREATE INDEX review_title ON reviews (title)",
 		"CREATE INDEX review_score_name ON review_scores (name)",
 		"CREATE INDEX author_score_name ON author_scores (name)",
 		"CREATE INDEX review_score_nsc ON review_scores (name, score)",
 		"CREATE INDEX author_score_nsc ON author_scores (name, score)",
 	}
 	for _, statement := range statements {
-		db.db.Exec(statement) // Best-effort is.. best.. effort.
+		if _, err := db.db.Exec(statement); err != nil {
+			log.Printf("%s: %s", statement, err)
+		}
 	}
 	return nil
 }
@@ -52,8 +56,9 @@ func (db DB) InsertReview(review Review, overwrite bool) error {
 	}
 
 	_, err := db.db.Exec(
-		"INSERT INTO reviews VALUES (?, ?)",
+		"INSERT INTO reviews VALUES (?, ?, ?)",
 		review.ID,
+		review.Title,
 		review.Body,
 	)
 	if err != nil {
@@ -187,7 +192,7 @@ func (db DB) SelectReviews(ids []int) (Reviews, error) {
 	clause := strings.Join(strs, ",")
 	rows, err := db.db.Query(
 		fmt.Sprintf(
-			`SELECT r.id, a.name, r.body
+			`SELECT r.id, r.title, a.name, r.body
 			 FROM reviews r, authors a, authorship x
 			 WHERE r.id IN (%s)
 			 AND x.review_id == r.id
@@ -202,8 +207,9 @@ func (db DB) SelectReviews(ids []int) (Reviews, error) {
 	for rows.Next() {
 		var id int
 		var author string
+		var title string
 		var body string
-		if err := rows.Scan(&id, &author, &body); err != nil {
+		if err := rows.Scan(&id, &title, &author, &body); err != nil {
 			return reviews, fmt.Errorf("SELECT review error: %s", err)
 		}
 		reviews[id] = Review{
@@ -282,5 +288,15 @@ func (db DB) SelectAllReviewsWithout(scoreName string) (Reviews, error) {
 func (db DB) SelectReviewCount() int {
 	var count int
 	db.db.QueryRow("SELECT Count(*) FROM reviews").Scan(&count)
+	return count
+}
+
+func (db DB) SelectAuthors(names []string) Authors {
+
+}
+
+func (db DB) SelectAuthorCount() int {
+	var count int
+	db.db.QueryRow("SELECT Count(DISTINCT name) FROM authors").Scan(&count)
 	return count
 }

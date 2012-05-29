@@ -10,8 +10,8 @@ import (
 
 // QueryReviews takes a server-side-processing HTTP request
 // and returns the JSON data that serves DataTables.
-func (db DB) QueryReviews(r *http.Request) ([]byte, error) {
-	p, err := GetReviewParams(r)
+func QueryReviews(db DB, r *http.Request) ([]byte, error) {
+	p, err := GetProcessingParams(r)
 	if err != nil {
 		return []byte{}, fmt.Errorf("parsing request: %s", err)
 	}
@@ -31,7 +31,7 @@ func (db DB) QueryReviews(r *http.Request) ([]byte, error) {
 	return buf, nil
 }
 
-type ReviewParams struct {
+type ProcessingParams struct {
 	Echo string
 	SortColumn string
 	SortDirection string
@@ -43,8 +43,8 @@ type ReviewParams struct {
 	columnNames map[string]string // int -> name
 }
 
-func GetReviewParams(r *http.Request) (ReviewParams, error) {
-	p := ReviewParams{
+func GetProcessingParams(r *http.Request) (ProcessingParams, error) {
+	p := ProcessingParams{
 		columnNames: map[string]string{},
 	}
 	if err := r.ParseForm(); err != nil {
@@ -114,7 +114,7 @@ func GetReviewParams(r *http.Request) (ReviewParams, error) {
 	return p, nil
 }
 
-func (db DB) SelectReviewsBy(p ReviewParams) (ids IDSlice, total int, matching int, err error) {
+func (db DB) SelectReviewsBy(p ProcessingParams) (ids IDSlice, total int, matching int, err error) {
 
 	// we build the query from a set of clauses
 	// we provide "SELECT id" or "SELECT Count(id)" as neccessary
@@ -134,8 +134,7 @@ func (db DB) SelectReviewsBy(p ReviewParams) (ids IDSlice, total int, matching i
 			p.SortColumn,
 		)
 		orderClause = fmt.Sprintf(
-			"AND rs.name = '%s' ORDER BY rs.score %s",
-			p.SortColumn,
+			"ORDER BY rs.score %s",
 			p.SortDirection,
 		)
 	case "Author":
@@ -155,7 +154,8 @@ func (db DB) SelectReviewsBy(p ReviewParams) (ids IDSlice, total int, matching i
 			[]string{
 				matchClause,
 				fmt.Sprintf(
-					"AND a.name LIKE '%%%s%%'",
+					"AND (a.name LIKE '%%%s%%' OR r.title LIKE '%%%s%%')",
+					p.SearchTerm,
 					p.SearchTerm,
 				),
 			},

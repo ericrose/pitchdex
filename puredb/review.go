@@ -12,6 +12,7 @@ import (
 
 type Review struct {
 	ID        int
+	Title     string
 	Author    string
 	Body      string
 	Permalink string
@@ -23,6 +24,8 @@ type Reviews map[int]Review
 func GetReviewsFromJSON(filename string) (Reviews, error) {
 	type JSONReview struct {
 		ID        int
+		Artists   string `json:"artists"`
+		Albums    string `json:"albums"`
 		Author    string `json:"reviewers"`
 		Body      string `json:"editorial"`
 		Permalink string `json:"key"`
@@ -49,8 +52,11 @@ func GetReviewsFromJSON(filename string) (Reviews, error) {
 		if err != nil {
 			return reviews, fmt.Errorf("%s: %s", r.Permalink, err)
 		}
+		cleanArtist := strings.TrimSpace(strings.Trim(r.Artists, "[']"))
+		cleanAlbum := strings.TrimSpace(strings.Trim(r.Albums, "[']"))
 		reviews[i] = Review{
 			ID:        int(id),
+			Title:     fmt.Sprintf("%s - %s", cleanArtist, cleanAlbum),
 			Author:    r.Author,
 			Body:      r.Body,
 			Permalink: r.Permalink,

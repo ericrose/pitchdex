@@ -122,22 +122,28 @@ func main() {
 		)
 		http.ServeFile(w, r, "index.html")
 	})
-	http.HandleFunc("/ssp/reviews", func(w http.ResponseWriter, r *http.Request) {
-		began := time.Now()
-		buf, err := db.QueryReviews(r)
-		if err != nil {
-			log.Printf(
-				"/ssp/reviews: error: %s (%v)",
-				err,
-				time.Since(began),
-			)
-			w.WriteHeader(http.StatusBadRequest)
-			return
+
+	type QueryFunc func (db DB, r *http.Request) ([]byte, error)
+	processVia := func(f QueryFunc) func (w http.ResponseWriter, r *http.Request) {
+		return func(w http.ResponseWriter, r *http.Request) {
+			began := time.Now()
+			buf, err := f(db, r)
+			if err != nil {
+				log.Printf(
+					"processing: error: %s (%v)",
+					err,
+					time.Since(began),
+				)
+				w.WriteHeader(http.StatusBadRequest)
+				return
+			}
+			log.Printf("processed: %d bytes (%v)", len(buf), time.Since(began))
+			log.Printf(">> \n\n%s\n\n", string(buf))
+			w.Write(buf)
 		}
-		log.Printf("/ssp/reviews: %d bytes (%v)", len(buf), time.Since(began))
-		log.Printf(">> \n\n%s\n\n", string(buf))
-		w.Write(buf)
-	})
+	}
+	http.HandleFunc("/ssp/reviews", processVia(QueryReviews))
+	http.HandleFunc("/ssp/authors", processVia(QueryAuthors))
 
 	endpoint := fmt.Sprintf("%s:%d", *httpHost, *httpPort)
 	log.Printf("serving on %s", endpoint)
