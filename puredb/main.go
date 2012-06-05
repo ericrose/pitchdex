@@ -123,8 +123,8 @@ func main() {
 		http.ServeFile(w, r, "index.html")
 	})
 
-	type QueryFunc func (db DB, r *http.Request) ([]byte, error)
-	processVia := func(f QueryFunc) func (w http.ResponseWriter, r *http.Request) {
+	type QueryFunc func(db DB, r *http.Request) ([]byte, error)
+	processVia := func(f QueryFunc) func(w http.ResponseWriter, r *http.Request) {
 		return func(w http.ResponseWriter, r *http.Request) {
 			began := time.Now()
 			buf, err := f(db, r)

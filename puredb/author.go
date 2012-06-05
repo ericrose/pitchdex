@@ -7,3 +7,4 @@ type Author struct {
 }
 
 type Authors map[string]Author
+

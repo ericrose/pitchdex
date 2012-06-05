@@ -32,15 +32,15 @@ func QueryReviews(db DB, r *http.Request) ([]byte, error) {
 }
 
 type ProcessingParams struct {
-	Echo string
-	SortColumn string
+	Echo          string
+	SortColumn    string
 	SortDirection string
-	SearchTerm string
-	Offset string
-	Count string
+	SearchTerm    string
+	Offset        string
+	Count         string
 
 	rawSortColumn string
-	columnNames map[string]string // int -> name
+	columnNames   map[string]string // int -> name
 }
 
 func GetProcessingParams(r *http.Request) (ProcessingParams, error) {
@@ -219,18 +219,18 @@ func (db DB) SelectReviewsBy(p ProcessingParams) (ids IDSlice, total int, matchi
 }
 
 type ReviewResponse struct {
-	Echo string `json:"sEcho"`
-	TotalRecords int `json:"iTotalRecords"`
-	TotalDisplayRecords int `json:"iTotalDisplayRecords"`
-	Results []map[string]string `json:"aaData"`
+	Echo                string              `json:"sEcho"`
+	TotalRecords        int                 `json:"iTotalRecords"`
+	TotalDisplayRecords int                 `json:"iTotalDisplayRecords"`
+	Results             []map[string]string `json:"aaData"`
 }
 
 func ReviewsToResponse(ids IDSlice, reviews Reviews, echo string, total, matching int) ReviewResponse {
 	rr := ReviewResponse{
-		Echo: echo,
-		TotalRecords: total,
+		Echo:                echo,
+		TotalRecords:        total,
 		TotalDisplayRecords: matching,
-		Results: make([]map[string]string, len(reviews)),
+		Results:             make([]map[string]string, len(reviews)),
 	}
 	log.Printf("ReviewsToResponse: %d Reviews", len(reviews))
 	for i, id := range ids {
@@ -240,13 +240,13 @@ func ReviewsToResponse(ids IDSlice, reviews Reviews, echo string, total, matchin
 		}
 		// These column names should match mDataProps in the .js
 		result := map[string]string{
-			"ID": fmt.Sprintf("%d", review.ID),
-			"Title": review.Permalink,
-			"Author": review.Author,
-			"Pitchformulaity": fmt.Sprintf("%d", review.Scores["Pitchformulaity"]),
+			"ID":                    fmt.Sprintf("%d", review.ID),
+			"Title":                 review.Permalink,
+			"Author":                review.Author,
+			"Pitchformulaity":       fmt.Sprintf("%d", review.Scores["Pitchformulaity"]),
 			"Naïve sentence length": fmt.Sprintf("%d", review.Scores["Naïve sentence length"]),
-			"Word count": fmt.Sprintf("%d", review.Scores["Word count"]),
-			"Words invented": fmt.Sprintf("%d", review.Scores["Words invented"]),
+			"Word count":            fmt.Sprintf("%d", review.Scores["Word count"]),
+			"Words invented":        fmt.Sprintf("%d", review.Scores["Words invented"]),
 		}
 		log.Printf("ReviewsToResponse: %d/%d: %d", i, len(reviews), review.ID)
 		rr.Results[i] = result

@@ -292,7 +292,63 @@ func (db DB) SelectReviewCount() int {
 }
 
 func (db DB) SelectAuthors(names []string) Authors {
-
+	authors := Authors{}
+	strs := make([]string, len(names))
+	for i, id := range ids {
+		strs[i] = fmt.Sprintf("", )
+	}
+	clause := strings.Join(strs, ",")
+	rows, err := db.db.Query(
+		fmt.Sprintf(
+			`SELECT r.id, r.title, a.name, r.body
+			 FROM reviews r, authors a, authorship x
+			 WHERE r.id IN (%s)
+			 AND x.review_id == r.id
+			 AND x.author_name == a.name
+			`,
+			clause,
+		),
+	)
+	if err != nil {
+		return reviews, err
+	}
+	for rows.Next() {
+		var id int
+		var author string
+		var title string
+		var body string
+		if err := rows.Scan(&id, &title, &author, &body); err != nil {
+			return reviews, fmt.Errorf("SELECT review error: %s", err)
+		}
+		reviews[id] = Review{
+			ID:     id,
+			Author: author,
+			Body:   body,
+			Scores: map[string]int{},
+		}
+	}
+	rows, err = db.db.Query(
+		fmt.Sprintf(
+			`SELECT review_id, name, score
+			 FROM review_scores
+			 WHERE review_id IN (%s)
+			`,
+			clause,
+		),
+	)
+	if err != nil {
+		return reviews, err
+	}
+	for rows.Next() {
+		var id int
+		var scoreName string
+		var scoreValue int
+		if err := rows.Scan(&id, &scoreName, &scoreValue); err != nil {
+			return reviews, fmt.Errorf("SELECT score error: %s", err)
+		}
+		reviews[id].Scores[scoreName] = scoreValue
+	}
+	return reviews, nil
 }
 
 func (db DB) SelectAuthorCount() int {

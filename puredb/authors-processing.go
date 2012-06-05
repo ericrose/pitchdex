@@ -27,7 +27,7 @@ func QueryAuthors(db DB, r *http.Request) ([]byte, error) {
 	return buf, nil
 }
 
-func (db DB) SelectAuthorsBy(p ProcessingParams) (authors []Author, total int, matching int, err error) {
+func (db DB) SelectAuthorsBy(p ProcessingParams) (authors Authors, total int, matching int, err error) {
 
 	// we build the query from a set of clauses
 	// we provide "SELECT id" or "SELECT Count(id)" as neccessary
@@ -102,7 +102,7 @@ func (db DB) SelectAuthorsBy(p ProcessingParams) (authors []Author, total int, m
 	// Then, fetch IDs
 	idsQuery := strings.Join(
 		[]string{
-			"SELECT DISTINCT r.id",
+			"SELECT a.name, 0 AS review_count, ",
 			fromClause,
 			whereClause,
 			matchClause,
@@ -117,7 +117,7 @@ func (db DB) SelectAuthorsBy(p ProcessingParams) (authors []Author, total int, m
 		err = fmt.Errorf("making IDs query: %s", err)
 		return
 	}
-	ids = IDSlice{}
+	ids := IDSlice{}
 	for rows.Next() {
 		var id int
 		if err = rows.Scan(&id); err != nil {
@@ -127,4 +127,37 @@ func (db DB) SelectAuthorsBy(p ProcessingParams) (authors []Author, total int, m
 		ids = append(ids, id)
 	}
 	return
+}
+
+type AuthorResponse struct {
+	Echo                string              `json:"sEcho"`
+	TotalRecords        int                 `json:"iTotalRecords"`
+	TotalDisplayRecords int                 `json:"iTotalDisplayRecords"`
+	Results             []map[string]string `json:"aaData"`
+}
+
+func AuthorsToResponse(authors Authors, echo string, total, matching int) AuthorResponse {
+	ar := AuthorResponse{
+		Echo:                echo,
+		TotalRecords:        total,
+		TotalDisplayRecords: matching,
+		Results:             make([]map[string]string, len(authors)),
+	}
+	log.Printf("AuthorsToResponse: %d Authors", len(authors))
+	i := 0
+	for _, author := range authors {
+		// These column names should match mDataProps in the .js
+		result := map[string]string{
+			"Author":                 author.Name,
+			"Reviews":                fmt.Sprintf("%d", author.Reviews),
+			"Overall Bullshit Score": fmt.Sprintf("%d", author.Scores["Overall Bullshit Score"]),
+			"Pitchformulaity":        fmt.Sprintf("%d", author.Scores["Pitchformulaity"]),
+			"Naïve sentence length":  fmt.Sprintf("%d", author.Scores["Naïve sentence length"]),
+			"Word count":             fmt.Sprintf("%d", author.Scores["Word count"]),
+			"Words invented":         fmt.Sprintf("%d", author.Scores["Words invented"]),
+		}
+		ar.Results[i] = result
+		i++
+	}
+	return ar
 }
